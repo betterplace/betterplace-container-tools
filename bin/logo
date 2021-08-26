@@ -1,0 +1,231 @@
+#!/usr/bin/env ruby
+
+require 'term/ansicolor'
+include Term::ANSIColor
+require 'tins/xt'
+require 'base64'
+require 'redis'
+
+$: << 'app/lib'
+
+logo = Base64.decode64(<<~end)
+  G1s0ODs1OzBtICAgICAgICAgICAgG1s0ODs1OzIzM20gG1s0ODs1OzU4bSAbWzQ4OzU7Nj
+  RtIBtbNDg7NTs2NG0gG1s0ODs1OzEwNm0gG1s0ODs1OzEwNm0gG1s0ODs1OzEwNm0gG1s0
+  ODs1OzEwNm0gG1s0ODs1OzE0OG0gG1s0ODs1OzE0OG0gG1s0ODs1OzE0OG0gG1s0ODs1Oz
+  E0OG0gG1s0ODs1OzEwNm0gG1s0ODs1OzEwNm0gG1s0ODs1OzEwNm0gG1s0ODs1OzEwNm0g
+  G1s0ODs1OzY0bSAbWzQ4OzU7NjRtIBtbNDg7NTs1OG0gG1s0ODs1OzIzM20gG1s0ODs1Oz
+  BtICAgICAgICAgICAgG1swbQobWzQ4OzU7MG0gICAgICAgIBtbNDg7NTsyMzNtIBtbNDg7
+  NTs1OG0gG1s0ODs1OzY0bSAbWzQ4OzU7MTA2bSAbWzQ4OzU7MTQ4bSAbWzQ4OzU7MTQ4bS
+  AgICAgICAgICAgICAgICAgIBtbNDg7NTsxNDhtIBtbNDg7NTsxMDZtIBtbNDg7NTs2NG0g
+  G1s0ODs1OzU4bSAbWzQ4OzU7MjMybSAbWzQ4OzU7MG0gICAgICAgIBtbMG0KG1s0ODs1Oz
+  BtICAgICAbWzQ4OzU7MG0gG1s0ODs1OzU4bSAbWzQ4OzU7MTA2bSAbWzQ4OzU7MTQ4bSAb
+  WzQ4OzU7MTQ4bSAgICAbWzQ4OzU7MTQ4bSAbWzQ4OzU7MTA2bSAbWzQ4OzU7MTA2bSAbWz
+  Q4OzU7NjRtIBtbNDg7NTs1OG0gG1s0ODs1OzU4bSAbWzQ4OzU7MjJtIBtbNDg7NTsyMzZt
+  IBtbNDg7NTsyMzVtICAbWzQ4OzU7MjM2bSAbWzQ4OzU7MjJtIBtbNDg7NTs1OG0gG1s0OD
+  s1OzU4bSAbWzQ4OzU7NjRtIBtbNDg7NTsxMDZtIBtbNDg7NTsxMDZtIBtbNDg7NTsxNDht
+  IBtbNDg7NTsxNDhtICAgIBtbNDg7NTsxMDZtIBtbNDg7NTs2NG0gG1s0ODs1OzU4bSAbWz
+  Q4OzU7MG0gICAgICAbWzBtChtbNDg7NTswbSAgIBtbNDg7NTsyMzJtIBtbNDg7NTs2NG0g
+  G1s0ODs1OzEwNm0gG1s0ODs1OzE0OG0gICAgG1s0ODs1OzExMm0gG1s0ODs1OzEwNm0gG1
+  s0ODs1OzU4bSAbWzQ4OzU7MjM1bSAbWzQ4OzU7MG0gICAgICAgICAgICAgICAgG1s0ODs1
+  OzIzNW0gG1s0ODs1OzY0bSAbWzQ4OzU7MTA2bSAbWzQ4OzU7MTQ4bSAbWzQ4OzU7MTQ4bS
+  AgICAbWzQ4OzU7MTA2bSAbWzQ4OzU7NThtIBtbNDg7NTswbSAgICAbWzBtChtbNDg7NTsw
+  bSAgG1s0ODs1OzIybSAbWzQ4OzU7MTA2bSAbWzQ4OzU7MTQ4bSAgICAbWzQ4OzU7MTA2bS
+  AbWzQ4OzU7NjRtIBtbNDg7NTsyMzRtIBtbNDg7NTswbSAgICAgICAgICAgICAgICAgICAg
+  ICAbWzQ4OzU7MjM1bSAbWzQ4OzU7NjRtIBtbNDg7NTsxMDZtIBtbNDg7NTsxNDhtICAgIB
+  tbNDg7NTsxMDZtIBtbNDg7NTsyMzdtIBtbNDg7NTswbSAgG1swbQobWzQ4OzU7MG0gG1s0
+  ODs1OzU4bSAbWzQ4OzU7MTQ4bSAbWzQ4OzU7MTQ4bSAgIBtbNDg7NTsxMTJtIBtbNDg7NT
+  s2NG0gG1s0ODs1OzIzMm0gG1s0ODs1OzBtICAgICAgG1s0ODs1OzIzNG0gG1s0ODs1OzU4
+  bSAbWzQ4OzU7NjRtIBtbNDg7NTsxMDZtIBtbNDg7NTsxMDZtIBtbNDg7NTsxMDZtICAbWz
+  Q4OzU7MTA2bSAbWzQ4OzU7MTA2bSAbWzQ4OzU7NjRtIBtbNDg7NTs1OG0gG1s0ODs1OzIz
+  M20gG1s0ODs1OzBtICAgIBtbNDg7NTswbSAbWzQ4OzU7MG0gG1s0ODs1OzBtICAbWzQ4Oz
+  U7MjMzbSAbWzQ4OzU7NjRtIBtbNDg7NTsxNDhtIBtbNDg7NTsxNDhtICAgG1s0ODs1OzEw
+  Nm0gG1s0ODs1OzU4bSAbWzQ4OzU7MG0gG1swbQobWzQ4OzU7MjJtIBtbNDg7NTsxNDhtIB
+  tbNDg7NTsxNDhtICAgG1s0ODs1OzEwNm0gG1s0ODs1OzIybSAbWzQ4OzU7MG0gICAgICAb
+  WzQ4OzU7NThtIBtbNDg7NTsxMDZtIBtbNDg7NTsxNDhtIBtbNDg7NTsxNDhtICAgICAgIC
+  AgIBtbNDg7NTsxNDhtIBtbNDg7NTsxMDZtIBtbNDg7NTsyMm0gG1s0ODs1OzBtIBtbNDg7
+  NTs1OG0gG1s0ODs1OzEwNm0gG1s0ODs1OzEwNm0gG1s0ODs1OzY0bSAbWzQ4OzU7MjM0bS
+  AbWzQ4OzU7MG0gIBtbNDg7NTsyMm0gG1s0ODs1OzEwNm0gG1s0ODs1OzE0OG0gICAbWzQ4
+  OzU7MTEybSAbWzQ4OzU7MjM3bSAbWzBtChtbNDg7NTsxMDZtIBtbNDg7NTsxNDhtICAgIB
+  tbNDg7NTs1OG0gG1s0ODs1OzBtICAgICAbWzQ4OzU7MjMzbSAbWzQ4OzU7MTA2bSAbWzQ4
+  OzU7MTQ4bSAgICAbWzQ4OzU7MTA2bSAbWzQ4OzU7NjRtIBtbNDg7NTs2NG0gG1s0ODs1Oz
+  U4bSAgG1s0ODs1OzY0bSAbWzQ4OzU7MTA2bSAbWzQ4OzU7MTA2bSAbWzQ4OzU7MTQ4bSAg
+  IBtbNDg7NTsxNDhtIBtbNDg7NTsxMDZtIBtbNDg7NTsxNDhtICAgIBtbNDg7NTsxMDZtIB
+  tbNDg7NTsyMzNtIBtbNDg7NTswbSAgG1s0ODs1OzIybSAbWzQ4OzU7MTQ4bSAbWzQ4OzU7
+  MTQ4bSAgIBtbNDg7NTsxMDZtIBtbMG0KG1s0ODs1OzEwNm0gG1s0ODs1OzE0OG0gICAbWz
+  Q4OzU7MTQ4bSAbWzQ4OzU7MjMybSAbWzQ4OzU7MG0gICAgIBtbNDg7NTsxMDZtIBtbNDg7
+  NTsxNDhtICAgG1s0ODs1OzE0OG0gG1s0ODs1OzY0bSAbWzQ4OzU7MG0gG1s0ODs1OzBtIC
+  AgICAgG1s0ODs1OzIzM20gG1s0ODs1OzY0bSAbWzQ4OzU7MTA2bSAbWzQ4OzU7MTQ4bSAg
+  ICAgG1s0ODs1OzEwNm0gG1s0ODs1OzU4bSAbWzQ4OzU7MG0gG1s0ODs1OzBtICAgIBtbND
+  g7NTsxMDZtIBtbNDg7NTsxNDhtICAgG1s0ODs1OzEwNm0gG1swbQobWzQ4OzU7MTQ4bSAb
+  WzQ4OzU7MTQ4bSAgIBtbNDg7NTsxNDhtIBtbNDg7NTsyMzJtIBtbNDg7NTswbSAgICAbWz
+  Q4OzU7MjMzbSAbWzQ4OzU7MTQ4bSAbWzQ4OzU7MTQ4bSAgIBtbNDg7NTsxMDZtIBtbNDg7
+  NTswbSAgICAgICAgICAbWzQ4OzU7MjMzbSAbWzQ4OzU7NjRtIBtbNDg7NTsxMDZtIBtbND
+  g7NTsxMTJtIBtbNDg7NTsxMDZtIBtbNDg7NTs1OG0gG1s0ODs1OzBtIBtbNDg7NTswbSAg
+  ICAgIBtbNDg7NTs2NG0gG1s0ODs1OzE0OG0gICAbWzQ4OzU7MTQ4bSAbWzBtChtbNDg7NT
+  sxMDZtIBtbNDg7NTsxNDhtICAgIBtbNDg7NTs1OG0gG1s0ODs1OzBtICAgIBtbNDg7NTsw
+  bSAbWzQ4OzU7MTA2bSAbWzQ4OzU7MTQ4bSAgIBtbNDg7NTsxMDZtIBtbNDg7NTsyMm0gG1
+  s0ODs1OzBtICAgICAgICAgICAgICAgICAgICAgG1s0ODs1OzBtIBtbNDg7NTsxMDZtIBtb
+  NDg7NTsxNDhtICAgG1s0ODs1OzEwNm0gG1swbQobWzQ4OzU7NThtIBtbNDg7NTsxNDhtIC
+  AgIBtbNDg7NTsxMDZtIBtbNDg7NTsyMzRtIBtbNDg7NTswbSAgICAbWzQ4OzU7NThtIBtb
+  NDg7NTsxMDZtIBtbNDg7NTsxNDhtICAgG1s0ODs1OzExMm0gG1s0ODs1OzY0bSAbWzQ4Oz
+  U7MjM0bSAbWzQ4OzU7MG0gICAgICAgICAgICAgICAgICAgG1s0ODs1OzY0bSAbWzQ4OzU7
+  MTQ4bSAgICAbWzQ4OzU7NThtIBtbMG0KG1s0ODs1OzBtIBtbNDg7NTsxMDZtIBtbNDg7NT
+  sxNDhtICAgIBtbNDg7NTsxMDZtIBtbNDg7NTsyMzNtIBtbNDg7NTswbSAgICAbWzQ4OzU7
+  MjM2bSAbWzQ4OzU7MTA2bSAbWzQ4OzU7MTQ4bSAbWzQ4OzU7MTQ4bSAgIBtbNDg7NTsxMD
+  ZtIBtbNDg7NTs2NG0gG1s0ODs1OzIzNW0gG1s0ODs1OzBtICAgICAgICAgICAgICAgIBtb
+  NDg7NTs1OG0gG1s0ODs1OzE0OG0gG1s0ODs1OzE0OG0gICAbWzQ4OzU7MTA2bSAbWzQ4Oz
+  U7MG0gG1swbQobWzQ4OzU7MG0gG1s0ODs1OzIzMm0gG1s0ODs1OzEwNm0gG1s0ODs1OzE0
+  OG0gICAgG1s0ODs1OzEwNm0gG1s0ODs1OzIybSAbWzQ4OzU7MG0gICAgIBtbNDg7NTsyMm
+  0gG1s0ODs1OzEwNm0gG1s0ODs1OzE0OG0gG1s0ODs1OzE0OG0gICAbWzQ4OzU7MTEybSAb
+  WzQ4OzU7NjRtIBtbNDg7NTsyMzVtIBtbNDg7NTswbSAgICAgICAgICAgIBtbNDg7NTsyMz
+  JtIBtbNDg7NTs2NG0gG1s0ODs1OzE0OG0gG1s0ODs1OzE0OG0gICAbWzQ4OzU7MTA2bSAb
+  WzQ4OzU7MjMzbSAbWzQ4OzU7MG0gG1swbQobWzQ4OzU7MG0gIBtbNDg7NTswbSAbWzQ4Oz
+  U7NjRtIBtbNDg7NTsxNDhtIBtbNDg7NTsxNDhtICAgG1s0ODs1OzE0OG0gG1s0ODs1OzY0
+  bSAbWzQ4OzU7MjMybSAbWzQ4OzU7MG0gICAgIBtbNDg7NTsyMm0gG1s0ODs1OzEwNm0gG1
+  s0ODs1OzE0OG0gG1s0ODs1OzE0OG0gICAbWzQ4OzU7MTEybSAbWzQ4OzU7NjRtIBtbNDg7
+  NTsyMzVtIBtbNDg7NTswbSAgICAgICAgIBtbNDg7NTs1OG0gG1s0ODs1OzEwNm0gG1s0OD
+  s1OzE0OG0gICAbWzQ4OzU7MTQ4bSAbWzQ4OzU7NjRtIBtbNDg7NTsyMzJtIBtbNDg7NTsw
+  bSAgG1swbQobWzQ4OzU7MG0gICAgG1s0ODs1OzIybSAbWzQ4OzU7MTA2bSAbWzQ4OzU7MT
+  Q4bSAgICAbWzQ4OzU7MTA2bSAbWzQ4OzU7NThtIBtbNDg7NTswbSAbWzQ4OzU7MG0gICAg
+  IBtbNDg7NTsyMzdtIBtbNDg7NTsxMDBtIBtbNDg7NTsxNDhtIBtbNDg7NTsxNDhtICAgG1
+  s0ODs1OzExMm0gG1s0ODs1OzY0bSAbWzQ4OzU7MjM1bSAbWzQ4OzU7MG0gICAgIBtbNDg7
+  NTsyMm0gG1s0ODs1OzEwNm0gG1s0ODs1OzE0OG0gG1s0ODs1OzE0OG0gICAbWzQ4OzU7MT
+  A2bSAbWzQ4OzU7NThtIBtbNDg7NTswbSAgICAbWzBtChtbNDg7NTswbSAgICAgG1s0ODs1
+  OzBtIBtbNDg7NTs1OG0gG1s0ODs1OzEwNm0gG1s0ODs1OzE0OG0gICAgG1s0ODs1OzEwNm
+  0gG1s0ODs1OzU4bSAbWzQ4OzU7MG0gG1s0ODs1OzBtICAgICAbWzQ4OzU7MjM3bSAbWzQ4
+  OzU7NjRtIBtbNDg7NTsxNDhtIBtbNDg7NTsxNDhtICAgG1s0ODs1OzExMm0gG1s0ODs1Oz
+  Y0bSAbWzQ4OzU7MjM1bSAbWzQ4OzU7MG0gG1s0ODs1OzIybSAbWzQ4OzU7MTA2bSAbWzQ4
+  OzU7MTQ4bSAbWzQ4OzU7MTQ4bSAgIBtbNDg7NTsxMDZtIBtbNDg7NTs2NG0gG1s0ODs1Oz
+  IzMm0gG1s0ODs1OzBtICAgICAbWzBtChtbNDg7NTswbSAgICAgICAbWzQ4OzU7MG0gG1s0
+  ODs1OzU4bSAbWzQ4OzU7MTA2bSAbWzQ4OzU7MTQ4bSAgICAbWzQ4OzU7MTA2bSAbWzQ4Oz
+  U7NThtIBtbNDg7NTswbSAbWzQ4OzU7MG0gICAgIBtbNDg7NTsyMzZtIBtbNDg7NTs2NG0g
+  G1s0ODs1OzE0OG0gG1s0ODs1OzE0OG0gICAbWzQ4OzU7MTQ4bSAbWzQ4OzU7MTA2bSAbWz
+  Q4OzU7MTQ4bSAbWzQ4OzU7MTQ4bSAgIBtbNDg7NTsxMDZtIBtbNDg7NTs2NG0gG1s0ODs1
+  OzIzM20gG1s0ODs1OzBtICAgICAgIBtbMG0KG1s0ODs1OzBtICAgICAgICAgG1s0ODs1Oz
+  BtIBtbNDg7NTs1OG0gG1s0ODs1OzEwNm0gG1s0ODs1OzE0OG0gICAgG1s0ODs1OzEwNm0g
+  G1s0ODs1OzU4bSAbWzQ4OzU7MG0gG1s0ODs1OzBtICAgICAbWzQ4OzU7MjM2bSAbWzQ4Oz
+  U7NjRtIBtbNDg7NTsxNDhtIBtbNDg7NTsxNDhtICAgICAbWzQ4OzU7MTA2bSAbWzQ4OzU7
+  NjRtIBtbNDg7NTsyMzJtIBtbNDg7NTswbSAgICAgICAgIBtbMG0KG1s0ODs1OzBtICAgIC
+  AgICAgICAbWzQ4OzU7MG0gG1s0ODs1OzU4bSAbWzQ4OzU7MTA2bSAbWzQ4OzU7MTQ4bSAg
+  ICAbWzQ4OzU7MTA2bSAbWzQ4OzU7NThtIBtbNDg7NTswbSAbWzQ4OzU7MG0gICAgIBtbND
+  g7NTsyMzVtIBtbNDg7NTs2NG0gG1s0ODs1OzEwNm0gG1s0ODs1OzE0OG0gG1s0ODs1OzEw
+  Nm0gG1s0ODs1OzY0bSAbWzQ4OzU7MjMybSAbWzQ4OzU7MG0gICAgICAgICAgIBtbMG0KG1
+  s0ODs1OzBtICAgICAgICAgICAgIBtbNDg7NTswbSAbWzQ4OzU7NThtIBtbNDg7NTsxMDZt
+  IBtbNDg7NTsxNDhtICAgIBtbNDg7NTsxMDZtIBtbNDg7NTs1OG0gG1s0ODs1OzBtIBtbND
+  g7NTswbSAgICAgIBtbNDg7NTswbSAbWzQ4OzU7MG0gICAgICAgICAgICAgIBtbMG0KG1s0
+  ODs1OzBtICAgICAgICAgICAgICAgIBtbNDg7NTs1OG0gG1s0ODs1OzEwNm0gG1s0ODs1Oz
+  E0OG0gICAgG1s0ODs1OzEwNm0gG1s0ODs1OzU4bSAbWzQ4OzU7MjMybSAbWzQ4OzU7MG0g
+  ICAgICAgICAgICAgICAgICAgG1swbQobWzQ4OzU7MG0gICAgICAgICAgICAgICAgICAbWz
+  Q4OzU7NThtIBtbNDg7NTsxMDZtIBtbNDg7NTsxNDhtICAgIBtbNDg7NTsxMDZtIBtbNDg7
+  NTsyMzJtIBtbNDg7NTswbSAgICAgICAgICAgICAgICAgIBtbMG0KG1s0ODs1OzBtICAgIC
+  AgICAgICAgICAgICAgICAbWzQ4OzU7NThtIBtbNDg7NTsxMDZtIBtbNDg7NTsxMDZtIBtb
+  NDg7NTs1OG0gG1s0ODs1OzBtIBtbNDg7NTswbSAgICAgICAgICAgICAgICAgICAbWzBtCg
+end
+
+def gce_env
+  if ENV['RAILS_ENV'] == 'production'
+    if ENV['STAGING'].to_i == 0
+      red('production')
+    else
+      yellow('staging')
+    end
+  else
+    ENV.fetch('RAILS_ENV', 'development')
+  end
+end
+
+def os(name)
+  os_release_file = '/etc/os-release'
+  if File.exist?(os_release_file)
+    value = File.new(os_release_file).find { |l| l =~ /^#{name}="?([^"]+)/ and break $1 }
+    return value if value && !value.empty?
+  end
+  ?–
+end
+
+def env(name)
+  ENV.fetch(name, ?–)
+end
+
+def starttime
+  filename = '/app/process-exec-started'
+  if File.exist?(filename)
+    File.stat(filename).mtime
+  else
+    Time.now
+  end
+end
+
+def redis
+  Redis.new
+end
+
+def project
+  ENV.fetch('PROJECT')
+end
+
+def release
+  redis&.get('%s_release' % project) || 'n/a'
+end
+
+def deployed_at
+  redis&.get('%s_deployed_at' % project) || 'n/a'
+end
+
+def revision7
+  ENV.fetch('REVISION', redis&.get('%s_revision' % project))&.[](0, 7)
+end
+
+def github
+  revision7.full? { |revision|
+    color(26, "%s/%s" %  [ ENV.fetch('GITHUB_PREFIX'), revision ])
+  } || 'n/a'
+end
+
+def workspace_bucket
+  if bucket = ENV['WORKSPACE_BUCKET']
+    "%s (use with gsutil cp filename…)" % bold(bucket)
+  else
+    bold("n/a")
+  end
+end
+
+def load_average
+  avg = `uptime`.scan(/load average\S*\s+([0-9.]+)/).flatten.first.to_f
+  processors = `getconf _NPROCESSORS_ONLN`.to_f
+  bold {
+    case avg
+    when 0..(processors / 2)
+      green { avg }
+    when (processors / 2)..processors
+      yellow { avg }
+    else
+      red { avg }
+    end
+  }
+end
+
+def intro
+  line = 4
+  r = ""
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Hostname:", bold(env('HOSTNAME')) ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Starttime:", bold(starttime.strftime('%FT%T%Z')) ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Uptime:", bold(Tins::Duration.new(Time.now - starttime).to_s) ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Time:", bold(Time.now.strftime('%FT%T%Z')) ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Env:", bold(gce_env) ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "OS:", bold(os('NAME') + " v%s" % os('VERSION_ID')) ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Ruby:", bold(RUBY_VERSION + "-p#{RUBY_PATCHLEVEL}") ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Release:", bold(release) ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Deployed:", bold(deployed_at) ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Github:", bold(github) ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Buildtime:", bold(File.stat($0).mtime.strftime('%FT%T%Z')) ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Cloud SDK:", bold(File.basename(env('CLOUD_SDK_VERSION'))) ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Workspace:", workspace_bucket ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Load Avg:", load_average ] }
+end
+
+exit if Tins::Terminal.lines < 25 || Tins::Terminal.columns < 80
+print clear_screen, move_home
+print logo
+print intro
+print move_to_line(25)
