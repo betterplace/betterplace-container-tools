@@ -1,0 +1,4 @@
+for file in Dir['.irbrc.d/**/*rb'] + Dir['irbrc.d/**/*.rb']
+  load file
+end
+puts `logo`

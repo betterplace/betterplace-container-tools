@@ -1,0 +1,4 @@
+export TERM=xterm-256color
+export EDITOR=vim
+export VISUAL=vim
+export PATH=/usr/local/bundle/bin:/app/bin:/app/script:/opt/sbin:/opt/bin:/google-cloud-sdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin

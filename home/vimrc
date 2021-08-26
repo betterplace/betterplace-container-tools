@@ -1,0 +1,126 @@
+" General Settings
+set autoindent
+set autowrite
+set backspace=indent,eol,start
+set backupskip=/tmp/*,/private/tmp/*
+if exists('&colorcolumn')
+  set colorcolumn=79
+end
+set clipboard=unnamed
+"set textwidth=80
+set clipboard=unnamed
+set dictionary=/usr/dict/words dictionary+=/usr/share/dict/words
+set encoding=utf8
+set errorfile=/tmp/errors.err
+set errorformat+=%f:%l
+set errorformat+=%E%f:%l
+set expandtab shiftwidth=2 tabstop=2
+set foldcolumn=0
+set formatoptions=cqrt
+set fsync
+set hidden
+set history=1000
+set hlsearch
+set laststatus=2
+set modelines=5
+set mouse=nv
+set mousehide
+set nocindent
+set nocompatible
+set nocursorcolumn
+set nocursorline
+set nodigraph
+set nofoldenable
+set noignorecase
+set noincsearch
+set nojoinspaces
+set nopaste
+set nosmartcase
+set nosmartindent
+set nowrap
+set number
+set ruler
+set shell=bash
+set shortmess=atIO
+set showcmd
+set showmatch
+set showmode
+set smarttab
+set splitbelow
+set splitright
+set statusline=\ ☠\ %<%f\ ⚐\ %y%m%r%*\ ❑\ %n%=✎\ %(%l:%c\%)\ ⇨\ %P
+set swapsync="fsync"
+set tags=./tags,tags
+set termencoding=utf8
+set tildeop
+set title
+set ttyfast
+set viminfo='20,<50,s10,h,!
+set visualbell t_vb=
+set wildchar=<TAB>
+set wildmode=full
+set wildmenu
+set winminheight=0
+set wrap
+if has("persistent_undo")
+  set undofile
+  if has("win32") || has("win64")
+    set undodir=$TMP/vim-$USER
+  else
+    set undodir=/tmp/vim-$USER
+  end
+end
+if has("win32") || has("win64")
+  set directory=$TMP
+else
+  set directory=/tmp
+end
+
+" Filetypes
+filetype on
+filetype indent on
+filetype plugin on
+
+" Color
+set t_Co=256
+colorscheme desert
+
+" Syntax
+if has("syntax")
+  syntax on
+end
+hi DiffAdd ctermfg=white ctermbg=22
+hi DiffChange ctermfg=white ctermbg=202
+hi DiffText ctermfg=52 ctermbg=166
+hi DiffDelete ctermfg=white ctermbg=88
+
+" Mappings
+let mapleader=","
+let maplocalleader=","
+" open another file in this files directory
+map <leader>e :e <C-R>=substitute(expand("%:p:h") . "/", " ", "\\\\ ", "g")<CR>
+map <leader>T :tabe <C-R>=substitute(expand("%:p:h") . "/", " ", "\\\\ ", "g")<CR>
+map <leader>s :split <C-R>=substitute(expand("%:p:h") . "/", " ", "\\\\ ", "g")<CR>
+map <leader>v :vsplit <C-R>=substitute(expand("%:p:h") . "/", " ", "\\\\ ", "g")<CR>
+map <leader>c :cd <C-R>=substitute(expand("%:p:h") . "/", " ", "\\\\ ", "g")<CR>
+map <leader>n :new <cfile><CR>
+vnoremap <leader>b c<C-R>=system('base64', @")<CR><ESC>
+vnoremap <leader>B c<C-R>=system('base64 -D', @")<CR><ESC>
+
+" Functions
+
+function! MakeFileExecutable()
+  checktime
+  execute 'au FileChangedShell ' . expand('%') . ' :echo'
+  call system('chmod a+x ' . expand('%'))
+  checktime
+  execute 'au! FileChangedShell ' . expand('%')
+endfunction
+
+function! MakeFileNonExecutable()
+  checktime
+  execute 'au FileChangedShell ' . expand('%') . ' :echo'
+  call system('chmod a-x ' . expand('%'))
+  checktime
+  execute 'au! FileChangedShell ' . expand('%')
+endfunction

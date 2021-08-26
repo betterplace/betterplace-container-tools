@@ -1,0 +1,27 @@
+#!/bin/sh
+
+set -e
+
+PROCESS=$1
+test -z $PROCESS && echo >&2 require processname as first argument
+
+echo -n Prepare app configuration…
+if [ -z "$REVISION" ]
+then
+  echo >&2 Need REVISION env var to configure app!
+  exit 1
+fi
+cd public
+if [ ! -e manifests.done ]
+then
+  wget -O manifests.tar.gz "https://storage.googleapis.com/$ASSETS_BUCKET/manifests.tar.gz-$REVISION"
+  tar xzf manifests.tar.gz
+  rm manifests.tar.gz
+  touch manifests.done
+fi
+cd -
+echo done.
+process_call=`grep "$PROCESS:" Procfile | head -1 | sed "s/$PROCESS: *//"`
+echo Executing process \"$process_call\"…
+test -e process-exec-started || touch process-exec-started
+exec bundle exec go-init -main "$process_call"
