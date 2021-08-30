@@ -185,7 +185,7 @@ end
 
 def workspace_bucket
   if bucket = ENV['WORKSPACE_BUCKET']
-    "%s (use with gsutil cp filename…)" % bold(bucket)
+    "gs://%s (use with gsutil cp filename…)" % bold(bucket)
   else
     bold("n/a")
   end
