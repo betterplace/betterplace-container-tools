@@ -134,6 +134,10 @@ def gce_env
   end
 end
 
+def context
+  ENV.fetch('CONTEXT', 'n/a')
+end
+
 def os(name)
   os_release_file = '/etc/os-release'
   if File.exist?(os_release_file)
@@ -214,6 +218,7 @@ def intro
   r << move_to(line += 1, 48) { "%10s %s" % [ "Uptime:", bold(Tins::Duration.new(Time.now - starttime).to_s) ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Time:", bold(Time.now.strftime('%FT%T%Z')) ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Env:", bold(gce_env) ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Context:", bold(context) ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "OS:", bold(os('NAME') + " v%s" % os('VERSION_ID')) ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Ruby:", bold(RUBY_VERSION + "-p#{RUBY_PATCHLEVEL}") ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Release:", bold(release) ] }
