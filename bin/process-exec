@@ -24,4 +24,4 @@ echo done.
 process_call=`grep "$PROCESS:" Procfile | head -1 | sed "s/$PROCESS: *//"`
 echo Executing process \"$process_call\"…
 test -e process-exec-started || touch process-exec-started
-exec bundle exec go-init -main "$process_call"
+exec bundle exec binit $process_call
