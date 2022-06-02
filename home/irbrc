@@ -2,3 +2,9 @@ for file in Dir['.irbrc.d/**/*rb'] + Dir['irbrc.d/**/*.rb']
   load file
 end
 puts `logo`
+
+if ENV['RAILS_ENV'] == 'production' && ENV['STAGING'].to_i != 1
+  # show a red 'PRODUCTION' label at the start of every prompt line
+  IRB.conf[:IRB_NAME] = "\033[31mPRODUCTION\033[0m"
+end
+
