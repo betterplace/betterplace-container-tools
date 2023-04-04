@@ -4,7 +4,6 @@ require 'term/ansicolor'
 include Term::ANSIColor
 require 'tins/xt'
 require 'base64'
-require 'redis'
 
 $: << 'app/lib'
 
@@ -160,24 +159,12 @@ def starttime
   end
 end
 
-def redis
-  Redis.new
-end
-
 def project
   ENV.fetch('PROJECT')
 end
 
-def release
-  redis&.get('%s_release' % project) || 'n/a'
-end
-
-def deployed_at
-  redis&.get('%s_deployed_at' % project) || 'n/a'
-end
-
 def revision7
-  ENV.fetch('REVISION', redis&.get('%s_revision' % project))&.[](0, 7)
+  ENV['REVISION']&.[](0, 7)
 end
 
 def github
@@ -214,20 +201,18 @@ def intro
   line = 4
   r = ""
   r << move_to(line += 1, 48) { "%10s %s" % [ "Hostname:", bold(env('HOSTNAME')) ] }
-  r << move_to(line += 1, 48) { "%10s %s" % [ "Starttime:", bold(starttime.strftime('%FT%T%Z')) ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Uptime:", bold(Tins::Duration.new(Time.now - starttime).to_s) ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Start:", bold(starttime.strftime('%FT%T%Z')) ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Time:", bold(Time.now.strftime('%FT%T%Z')) ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Env:", bold(gce_env) ] }
-  r << move_to(line += 1, 48) { "%10s %s" % [ "Context:", bold(context) ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "OS:", bold(os('NAME') + " v%s" % os('VERSION_ID')) ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Ruby:", bold(RUBY_VERSION + "-p#{RUBY_PATCHLEVEL}") ] }
-  r << move_to(line += 1, 48) { "%10s %s" % [ "Release:", bold(release) ] }
-  r << move_to(line += 1, 48) { "%10s %s" % [ "Deployed:", bold(deployed_at) ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Github:", bold(github) ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Context:", bold(context) ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Load Avg:", load_average ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Buildtime:", bold(File.stat($0).mtime.strftime('%FT%T%Z')) ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Cloud SDK:", bold(File.basename(env('CLOUD_SDK_VERSION'))) ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Workspace:", workspace_bucket ] }
-  r << move_to(line += 1, 48) { "%10s %s" % [ "Load Avg:", load_average ] }
 end
 
 exit if Tins::Terminal.lines < 25 || Tins::Terminal.columns < 80
