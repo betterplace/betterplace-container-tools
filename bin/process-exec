@@ -14,7 +14,7 @@ fi
 cd public
 if [ ! -e manifests.done ]
 then
-  wget -O manifests.tar.gz "https://storage.googleapis.com/$ASSETS_BUCKET/manifests.tar.gz-$REVISION"
+  wget -O manifests.tar.gz "https://storage.googleapis.com/$COMPILED_ASSETS_BUCKET/manifests.tar.gz-$REVISION"
   tar xzf manifests.tar.gz
   rm manifests.tar.gz
   touch manifests.done
