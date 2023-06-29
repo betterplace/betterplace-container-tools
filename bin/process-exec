@@ -16,6 +16,12 @@ if [ ! -e manifests.done ]
 then
   wget -O manifests.tar.gz "https://storage.googleapis.com/$COMPILED_ASSETS_BUCKET/manifests.tar.gz-$REVISION"
   tar xzf manifests.tar.gz
+  if [ "$OVERWRITE_ASSET_HOSTNAME" == "1" ]
+  then
+    # Beware this changes all hostnames in URLs, but it's always the same hostname (for now?)
+    ruby -ruri -i -e "BEGIN { r = ENV.fetch('ASSET_HOSTNAME') + ?. + URI.parse(ENV.fetch('ROOT_URL')).host }; print ARGF.read.gsub(URI.regexp) { |u| u = URI.parse(u); u.host = r; u.to_s }" packs/manifest.json
+    gzip -c packs/manifest.json > packs/manifest.json.gz
+  fi
   rm manifests.tar.gz
   touch manifests.done
 fi
