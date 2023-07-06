@@ -4,6 +4,7 @@ require 'term/ansicolor'
 include Term::ANSIColor
 require 'tins/xt'
 require 'base64'
+require 'uri'
 
 $: << 'app/lib'
 
@@ -147,7 +148,7 @@ def os(name)
 end
 
 def env(name)
-  ENV.fetch(name, ?–)
+  ENV.fetch(name, 'n/a')
 end
 
 def starttime
@@ -171,6 +172,13 @@ def github
   prefix = ENV['GITHUB_PREFIX'] or return 'n/a'
   revision7.full? { |revision|
     color(26, "%s/%s" %  [ prefix, revision ])
+  } || 'n/a'
+end
+
+def www
+  ENV['ROOT_URL'].full? { |url|
+    uri = URI.parse(url)
+    color(26, "%s://www.%s" % [ uri.scheme, uri.host ])
   } || 'n/a'
 end
 
@@ -204,8 +212,9 @@ def intro
   r << move_to(line += 1, 48) { "%10s %s" % [ "Uptime:", bold(Tins::Duration.new(Time.now - starttime).to_s) ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Start:", bold(starttime.strftime('%FT%T%Z')) ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Time:", bold(Time.now.strftime('%FT%T%Z')) ] }
-  r << move_to(line += 1, 48) { "%10s %s" % [ "Env:", '%s (%s)' % [ bold(gce_env), bold(ENV.fetch('GOOGLE_PROJECT', '-')) ] ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "Env:", '%s (%s)' % [ bold(gce_env), bold(ENV.fetch('GOOGLE_PROJECT', 'n/a')) ] ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "OS:", bold(os('NAME') + " v%s" % os('VERSION_ID')) ] }
+  r << move_to(line += 1, 48) { "%10s %s" % [ "WWW:", bold(www) ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Ruby:", bold(RUBY_VERSION + "-p#{RUBY_PATCHLEVEL}") ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Github:", bold(github) ] }
   r << move_to(line += 1, 48) { "%10s %s" % [ "Context:", bold(context) ] }
