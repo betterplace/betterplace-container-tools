@@ -164,13 +164,9 @@ def project
   ENV.fetch('PROJECT')
 end
 
-def revision7
-  ENV['REVISION']&.[](0, 7)
-end
-
 def github
   prefix = ENV['GITHUB_PREFIX'] or return 'n/a'
-  revision7.full? { |revision|
+  ENV['REVISION'].full? { |revision|
     color(26, "%s/%s" %  [ prefix, revision ])
   } || 'n/a'
 end
