@@ -24,4 +24,4 @@ echo done.
 process_call=`grep "$PROCESS:" Procfile | head -1 | sed "s/$PROCESS: *//"`
 echo Executing process \"$process_call\"…
 test -e process-exec-started || touch process-exec-started
-SKIP_SIGNAL_LOG=SIGURG AFTER='sudo /app/bin/terminate_cloud_sql_proxy' exec bundle exec binit $process_call
+SKIP_SIGNAL_LOG=SIGURG AFTER='/app/bin/quit_gcp_sql_proxy_v2' exec bundle exec binit $process_call
