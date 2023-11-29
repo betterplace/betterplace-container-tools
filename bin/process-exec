@@ -14,7 +14,15 @@ fi
 cd public
 if [ ! -e manifests.done ]
 then
-  wget -O manifests.tar.gz "https://storage.googleapis.com/$COMPILED_ASSETS_BUCKET/manifests.tar.gz-$REVISION"
+  set +e
+  local url="https://storage.googleapis.com/$COMPILED_ASSETS_BUCKET/manifests.tar.gz-$REVISION"
+  if ! wget -O manifests.tar.gz "$url"
+  then
+    echo >&2 "Could not fetch assets manifests via $url. Have they been built and uploaded there?"
+    exit 1
+  else
+    set -e
+  fi
   tar xzf manifests.tar.gz
   rm manifests.tar.gz
   touch manifests.done
